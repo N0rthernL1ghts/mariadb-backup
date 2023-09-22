@@ -1,5 +1,21 @@
 #!/usr/bin/with-contenv bash
 
+set -o pipefail
+
+# Exit handler
+onExit() {
+    local exitCode="$?"
+    local pid
+
+    # Kill the backup process
+    pid="$(cat /var/run/backupd.pid 2>/dev/null)"
+    if [ -n "${pid}" ]; then
+        kill -TERM "${pid}" 2>/dev/null
+    fi
+
+    exit "${exitCode}"
+}
+
 main() {
     local pid
 
@@ -11,7 +27,8 @@ main() {
     # Wait for the backup process to finish
     wait "${pid}"
 
-    rm -r /var/run/backupd.pid
+    rm -rf /var/run/backupd.pid
 }
 
+trap onExit EXIT
 main
