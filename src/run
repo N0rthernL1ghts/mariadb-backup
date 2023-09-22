@@ -1,7 +1,17 @@
 #!/usr/bin/with-contenv bash
 
 main() {
-    /app/backup
+    local pid
+
+    /app/backup &
+    pid=$!
+
+    printf "%s" "${pid}" >/var/run/backupd.pid
+
+    # Wait for the backup process to finish
+    wait "${pid}"
+
+    rm -r /var/run/backupd.pid
 }
 
 main

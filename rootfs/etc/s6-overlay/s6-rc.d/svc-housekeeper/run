@@ -10,15 +10,16 @@ main() {
 
     printf "Service started\n"
 
+    local pid
+
     while true; do
         /app/housekeeper &
-        PID="$!"
-        echo "${PID}" >/var/run/housekeeperd.pid
-
+        pid="$!"
+        printf "%s" "${pid}" >/var/run/housekeeperd.pid
         sleep 30
 
         # Make sure the process is actually finished before continuing
-        wait "${PID}"
+        wait "${pid}"
         rm -f "/var/run/housekeeperd.pid"
     done
 }
