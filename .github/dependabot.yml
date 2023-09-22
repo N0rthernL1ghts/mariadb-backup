@@ -1,0 +1,10 @@
+version: 2
+updates:
+
+   # Maintain Docker image dependencies
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "xZero707"
