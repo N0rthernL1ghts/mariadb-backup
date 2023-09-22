@@ -1,7 +1,6 @@
-ARG MARIADB_VERSION="10.11.5"
-ARG MARIADB_SHORT_VERSION="10.11"
+ARG MARIADB_VERSION="10.11"
 
-FROM ghcr.io/n0rthernl1ghts/mariadb:${MARIADB_SHORT_VERSION} AS mariadb
+FROM ghcr.io/n0rthernl1ghts/mariadb:${MARIADB_VERSION} AS mariadb
 FROM mariadb AS mariadb-overlay
 
 RUN set -eux \
@@ -46,5 +45,14 @@ ENV PS1="$(whoami)@$(hostname):$(pwd)\\$ " \
   BACKUP_PROCESS_LIMIT=10 \
   HOUSEKEEPER_PROCESS_LIMIT=10 \
   CRONTAB_EXPRESSION="0 0 * * *"
+
+ARG MARIADB_VERSION
+LABEL maintainer="Aleksandar Puharic <aleksandar@puharic.com>" \
+      org.opencontainers.image.source="https://github.com/N0rthernL1ghts/mariadb-backup" \
+      org.opencontainers.image.description="MariaDB Backup Companion ${MARIADB_VERSION} (${TARGETPLATFORM})" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="${MARIADB_VERSION}"
+
+ENV MARIADB_VERSION="${MARIADB_VERSION}"
 
 ENTRYPOINT ["/init"]
