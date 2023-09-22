@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+
+# Function to get the number of backups
+getNumberOfTimestampedBackups() {
+    find "${BACKUP_DIR}" -mindepth 1 -maxdepth 1 -type d | wc -l
+}
+
+# Function to get the oldest backup
+getOldestTimestampedBackup() {
+    find "${BACKUP_DIR}" -mindepth 1 -maxdepth 1 -type d | sort | head -n 1
+}
+
+deleteBackup() {
+    local backup="${1:?}"
+
+    if ! rm -r "${backup}"; then
+        printf "Error: Failed to delete the backup: %s\n" "${backup}" >&2
+        return 1
+    fi
+}
+
+main() {
+    # Define the backup directory
+    export BACKUP_DIR
+    BACKUP_DIR="$(realpath "${BACKUP_DIR:?}")"
+
+    local backupLimit="${BACKUP_LIMIT:-5}"
+    local processLimit="${HOUSEKEEPER_PROCESS_LIMIT:-10}"
+
+    # Get the number of backups
+    numOfTimestampedBackups="$(getNumberOfTimestampedBackups)"
+
+    printf "Number of backups: %s\n" "${numOfTimestampedBackups}"
+
+    local iteratorLimit=0
+
+    # If there are 3 or more backups, delete the oldest one
+    while [ "${numOfTimestampedBackups}" -gt "${backupLimit}" ]; do
+        if [ "${iteratorLimit}" -gt "${processLimit}" ]; then
+            printf "Warning: Process limit(%d) reached. Not all old backups were deleted. \n" "${processLimit}" >&2
+            printf "Number of backups: %s\n" "${numOfTimestampedBackups}" >&2
+            printf "Will continue in next run\n" >&2
+            return 1
+        fi
+
+        printf "Limit(%d) exceeded, deleting the oldest backup\n" "${backupLimit}"
+        deleteBackup "$(getOldestTimestampedBackup)"
+        numOfTimestampedBackups=$((numOfTimestampedBackups - 1))
+
+        iteratorLimit=$((iteratorLimit + 1))
+        sleep 0.5
+    done
+}
+
+main

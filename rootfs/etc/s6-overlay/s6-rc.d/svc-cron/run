@@ -1,0 +1,4 @@
+#!/usr/bin/with-contenv bash
+
+echo "Starting cron daemon..."
+exec s6-setuidgid root /usr/sbin/crond -f -l 2

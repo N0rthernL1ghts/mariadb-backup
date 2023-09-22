@@ -1,0 +1,26 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+set -o pipefail
+
+# svc-housekeeper main
+main() {
+    # This will prepend service name to all output from here
+    exec > >(while read line; do echo "[svc-housekeeper] ${line}"; done) 2>&1
+
+    printf "Service started\n"
+
+    while true; do
+        /app/housekeeper &
+        PID="$!"
+        echo "${PID}" >/var/run/housekeeperd.pid
+
+        sleep 30
+
+        # Make sure the process is actually finished before continuing
+        wait "${PID}"
+        rm -f "/var/run/housekeeperd.pid"
+    done
+}
+
+main

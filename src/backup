@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# shellcheck shell=bash
+
+createBackupDir() {
+    local backupDir="${1:?}"
+    local processLimit="${BACKUP_PROCESS_LIMIT:?}"
+    local processCount=0
+
+    # Attempt to find a unique backup directory name
+    while [ -d "${backupDir}" ]; do
+        printf "Backup directory already exists: %s\n" "${backupDir}" >&2
+        if [ "${processCount}" -gt "${processLimit}" ]; then
+            printf "Error: Process limit(%d) reached. Failed to create a new unique backup directory\n" "${processLimit}" >&2
+            return 1
+        fi
+
+        # Append random string to the backup directory name using openssl
+        backupDir="${backupDir}_$(openssl rand -hex 4)"
+        processCount=$((processCount + 1))
+    done
+
+    #echo "Backup dir: ${backupDir}" >&2
+
+    # This is to keep the backup directory name consistent
+    #if [ "${processCount}" = 0 ]; then
+    #    echo "EQ Backup dir: ${backupDir}" >&2
+    #    backupDir="${backupDir}_00000000"
+    #fi
+
+    mkdir -p "${backupDir}" >/dev/null 2>&1
+    echo "${backupDir}"
+}
+
+# Function to create a new backup
+createNewBackup() {
+    local timestamp="$1"
+    local newBackupDir="$(createBackupDir "${BACKUP_DIR}/${timestamp}")"
+
+    if [ $? -ne 0 ] || [ -z "${newBackupDir}" ]; then
+        printf "Error occured while creating backup directory\n" >&2
+        return 1
+    fi
+
+    if mariadb-backup --backup --target-dir="${newBackupDir}" --host="${MARIADB_HOST:?}" --user="${MARIADB_USER:?}" --password="${MARIADB_PASSWORD:?}"; then
+        # Write name of the latest backup to a file
+        printf "%s" "${timestamp}" >"${BACKUP_METADATA_DIR:?}/latest.txt"
+        printf "Backup created successfully\n"
+        printf "New backup created at %s\n" "${newBackupDir}"
+        return 0
+    fi
+
+    printf "Error occured while creating backup\n" >&2
+    return 1
+}
+
+main() {
+    exec > >(while read line; do echo "[backup] ${line}"; done) 2>&1
+
+    # Define the backup directory
+    export BACKUP_DIR
+    export BACKUP_METADATA_DIR
+    export BACKUP_PROCESS_LIMIT
+    BACKUP_DIR="$(realpath "${BACKUP_DIR:?}")"
+    BACKUP_METADATA_DIR="$(realpath "${BACKUP_METADATA_DIR:?}")"
+    BACKUP_PROCESS_LIMIT="${BACKUP_PROCESS_LIMIT:-10}"
+
+    # Timestamp the backup
+    local timestamp
+    timestamp="$(date +"%Y%m%d-%H%M_%s")"
+
+    printf "Creating a new backup at %s\n" "${BACKUP_DIR}/${timestamp}"
+    createNewBackup "${timestamp}"
+}
+
+main

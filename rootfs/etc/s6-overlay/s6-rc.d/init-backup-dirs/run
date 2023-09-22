@@ -1,0 +1,16 @@
+#!/usr/bin/with-contenv bash
+# shellcheck shell=bash
+
+set -eo pipefail
+
+# init-backup-dirs main
+main() {
+    exec > >(while read line; do echo "[init-backup-dirs] ${line}"; done) 2>&1
+
+    mkdir -p "${BACKUP_DIR:?}"
+    lsiown -R abc:abc "${BACKUP_DIR:?}"
+
+    mkdir -p "${BACKUP_METADATA_DIR:?}"
+    lsiown -R abc:abc "${BACKUP_METADATA_DIR:?}"
+}
+main

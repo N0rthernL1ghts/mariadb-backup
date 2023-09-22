@@ -1,0 +1,43 @@
+version: "3.7"
+
+# Environment
+x-linuxserver-common: &linuxserver-common-env
+  PUID: 1000
+  PGID: 1000
+  TZ: Europe/Stockholm
+
+networks:
+  default:
+    driver: bridge
+    attachable: true
+
+services:
+  backup:
+    build: 
+      context: .
+    environment:
+      <<: [*linuxserver-common-env]
+      MARIADB_HOST: "database"
+      MARIADB_DATABASE: "exampleUser1"
+      MARIADB_PASSWORD: "example2-Root3-pass"
+      MARIADB_USER: "root"
+      CRONTAB_EXPRESSION: "* * * * *"
+    volumes:
+      - ./data/backup/backup:/var/mariadb/backup
+      - ./data/database/data:/var/lib/mysql
+      - ./data/database/config:/config
+      - ./src/backup:/app/backup
+    networks:
+      default:
+  
+  database:
+    image: ghcr.io/n0rthernl1ghts/mariadb:10.11
+    environment:
+      <<: [*linuxserver-common-env]
+      MARIADB_ROOT_PASSWORD: "example2-Root3-pass"
+      MARIADB_INIT_USERS: "exampleUser1:examplePass1"
+    volumes:
+      - ./data/database/data:/var/lib/mysql
+      - ./data/database/config:/config
+    networks:
+      default:
