@@ -54,5 +54,6 @@ LABEL maintainer="Aleksandar Puharic <aleksandar@puharic.com>" \
       org.opencontainers.image.version="${MARIADB_VERSION}"
 
 ENV MARIADB_VERSION="${MARIADB_VERSION}"
+ENV LSIO_FIRST_PARTY=false
 
 ENTRYPOINT ["/init"]
